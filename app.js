@@ -1,19 +1,25 @@
 var createError = require('http-errors');
 var express = require('express');
+const ejs = require('ejs');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 const mongoose = require('mongoose');
-const products = require('./routes/products')
+const expressSession = require('express-session');
+const flash = require('connect-flash');
+
+//route
+const products = require('./routes/products');
+const authRoutes = require('./routes/auth');
+const indexRouter = require('./routes/index');
+const usersRouter = require('./routes/users');
+
 
 mongoose.Promise = global.Promise;
 
 mongoose.connect('mongodb+srv://admin:1234@cluster0.ohjbb2e.mongodb.net/?retryWrites=true&w=majority')
   .then(() => console.log("Connect successfully"))
   .catch((err) => console.error(err))
-
-var indexRouter = require('./routes/index');
-var usersRouter = require('./routes/users');
 
 var app = express();
 
@@ -25,11 +31,14 @@ app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
+
+app.use(flash());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
 app.use('/products', products);
+app.use('/auth', authRoutes);
 
 
 // catch 404 and forward to error handler
