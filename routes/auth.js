@@ -5,33 +5,58 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-router.post('/register', async (req, res) => {
+
+
+app.post('/register', async (req, res) => {
     try {
-        const { email, password } = req.body;
-        const user = new User({ email, password });
-        await user.save();
-        res.status(201).json({ message: 'User registered successfully' });
+        const { email, password, goal, birthDate, gender, height, weight, weightGoal, activityLevel, eatType } = req.body;
+
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return res.status(409).json({ message: 'Email already exists' });
+        }
+
+        const newUser = new User({
+            email,
+            password,
+            goal,
+            birthDate,
+            gender,
+            height,
+            weight,
+            weightGoal,
+            activityLevel,
+            eatType,
+            userImg,
+        });
+
+        await newUser.save();
+
+        res.status(201).json({ message: 'Registration successful' });
     } catch (error) {
-        res.status(500).json({ error: 'Error registering user' });
+        res.status(400).json({ message: error.message });
     }
 });
 
-// User login
-router.post('/login', async (req, res) => {
+app.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
+
         const user = await User.findOne({ email });
         if (!user) {
-            return res.status(401).json({ error: 'Authentication failed' });
+            return res.status(401).json({ message: 'Authentication failed' });
         }
-        const isPasswordValid = await bcrypt.compare(password, user.password);
-        if (!isPasswordValid) {
-            return res.status(401).json({ error: 'Authentication failed' });
+        const passwordMatch = await bcrypt.compare(password, user.password);
+        if (!passwordMatch) {
+            return res.status(401).json({ message: 'Authentication failed' });
         }
-        const token = jwt.sign({ userId: user._id }, 'your_secret_key', { expiresIn: '12h' });
+
+        
+        const token = jwt.sign({ userId: user._id }, 'your-secret-key', { expiresIn: '7d' });
+
         res.json({ token });
     } catch (error) {
-        res.status(500).json({ error: 'Error authenticating user' });
+        res.status(400).json({ message: error.message });
     }
 });
 
