@@ -7,13 +7,13 @@ var logger = require('morgan');
 const mongoose = require('mongoose');
 const expressSession = require('express-session');
 const flash = require('connect-flash');
-
+const app = express();
 //route
-const products = require('./routes/products');
+
 const authRoutes = require('./routes/auth');
 const indexRouter = require('./routes/index');
 const usersRouter = require('./routes/users');
-
+const foodHistoryRouter = require('./routes/food-history');
 
 mongoose.Promise = global.Promise;
 
@@ -21,7 +21,7 @@ mongoose.connect('mongodb+srv://admin:1234@cluster0.ohjbb2e.mongodb.net/?retryWr
   .then(() => console.log("Connect successfully"))
   .catch((err) => console.error(err))
 
-var app = express();
+
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -36,8 +36,8 @@ app.use(flash());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
+app.use('/food-history', foodHistoryRouter);
 app.use('/users', usersRouter);
-app.use('/products', products);
 app.use('/auth', authRoutes);
 
 
