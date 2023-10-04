@@ -1,29 +1,27 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
-const FoodHistorySchema = new Schema({
+const waterHistorySchema = new Schema({
     userId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: true,
     },
-    foodName: {
+    waterName: {
         type: String,
         required: true,
     },
     calories: {
         type: Number,
-        required: true,
     },
-    fat: {
+    caffeine: {
         type: Number,
-        required: true,
     },
-    carbohydate: {
+    sugar: {
         type: Number,
-        required: true,
+       
     },
-    protein: {
+    intake: {
         type: Number,
         required: true,
     },
@@ -33,4 +31,4 @@ const FoodHistorySchema = new Schema({
     },
 });
 
-module.exports = mongoose.model('FoodHistory', FoodHistorySchema);
+module.exports = mongoose.model('waterHistorySchema', waterHistorySchema);

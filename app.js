@@ -14,7 +14,7 @@ const authRoutes = require('./routes/auth');
 const indexRouter = require('./routes/index');
 const usersRouter = require('./routes/users');
 const foodHistoryRouter = require('./routes/food-history');
-
+const waterHistoryRouter = require('./routes/water-history');
 mongoose.Promise = global.Promise;
 
 mongoose.connect('mongodb+srv://admin:1234@cluster0.ohjbb2e.mongodb.net/?retryWrites=true&w=majority')
@@ -37,6 +37,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
 app.use('/food-history', foodHistoryRouter);
+app.use('/water-history', waterHistoryRouter);
 app.use('/users', usersRouter);
 app.use('/auth', authRoutes);
 

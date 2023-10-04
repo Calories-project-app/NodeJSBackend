@@ -41,24 +41,29 @@ router.post('/register', async (req, res) => {
     }
 });
 
+
 router.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
-
-        const user = await User.findOne({ email });
+        const user = await User.findOne({ email })
+      
         if (!user) {
             return res.status(401).json({ message: 'Authentication failed' });
         }
+
         const passwordMatch = await bcrypt.compare(password, user.password);
         if (!passwordMatch) {
             return res.status(401).json({ message: 'Password wrong' });
         }
 
-
         const token = jwt.sign({ userId: user._id }, 'your-secret-key', { expiresIn: '7d' });
 
-        res.json({ token });
+        res.status(200).json({
+            token,
+            user,
+          })
     } catch (error) {
+        console.error(err)
         res.status(400).json({ message: error.message });
     }
 });

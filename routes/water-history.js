@@ -1,35 +1,31 @@
 const express = require('express');
 const router = express.Router();
-const FoodHistory = require('../models/FoodHistory');
+const WaterHistory = require('../models/waterHistory');
 const User = require('../models/User');
 const verifyToken = require('../middleware/verifyToken');
 
-router.post('/foodHistory', verifyToken, async (req, res) => {
+router.post('/waterHistory', verifyToken, async (req, res) => {
     try {
-        const { userId, foodName, calories, fat, protein, carbohydate, time } = req.body;
+        const { userId, waterName,calories, caffeine, sugar, intake, time } = req.body;
 
         const userExists = await User.findById(userId);
         if (!userExists) {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        const foodHistory = new FoodHistory({
-            userId,
-            foodName,
-            calories,
-            fat, protein, carbohydate,
-            time,
+        const waterHistory = new WaterHistory({
+            userId, waterName,calories, caffeine, sugar, intake, time
         });
 
-        await foodHistory.save();
+        await waterHistory.save();
 
-        res.status(201).json({ message: 'Food history saved successfully' });
+        res.status(201).json({ message: 'water history saved successfully' });
     } catch (error) {
         res.status(500).json({ message: 'Internal server error', error: error.message });
     }
 });
 
-router.get('/foodHistory/:userId', verifyToken, async (req, res) => {
+router.get('/waterHistory/:userId', verifyToken, async (req, res) => {
     try {
         const userId = req.params.userId;
 
@@ -38,9 +34,9 @@ router.get('/foodHistory/:userId', verifyToken, async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        const foodHistory = await FoodHistory.find({ userId });
+        const waterHistory = await WaterHistory.find({ userId });
 
-        res.status(200).json({ foodHistory });
+        res.status(200).json({ waterHistory });
     } catch (error) {
         res.status(500).json({ message: 'Internal server error', error: error.message });
     }
