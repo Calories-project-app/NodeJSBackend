@@ -14,6 +14,7 @@ const UserSchema = new Schema({
     eatType: { type: String, required: true },
     userImg: { type: String },
     basalMetabolicRate: { type: Number }, 
+    waterConsumingRate:{type:Number},
     totalDailyCalories: { type: Number },
 })
 

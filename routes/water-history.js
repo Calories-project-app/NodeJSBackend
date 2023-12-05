@@ -4,7 +4,7 @@ const WaterHistory = require('../models/waterHistory');
 const User = require('../models/User');
 const verifyToken = require('../middleware/verifyToken');
 
-router.post('/waterHistory', verifyToken, async (req, res) => {
+router.post('/saveWater', verifyToken, async (req, res) => {
     try {
         const { userId, waterName,calories, caffeine, sugar, intake, time } = req.body;
 

@@ -31,4 +31,4 @@ const waterHistorySchema = new Schema({
     },
 });
 
-module.exports = mongoose.model('waterHistorySchema', waterHistorySchema);
+module.exports = mongoose.model('waterHistory', waterHistorySchema);

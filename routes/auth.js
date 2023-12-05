@@ -17,10 +17,10 @@ router.post('/register', async (req, res) => {
         }
         const basalMetabolicRate = calculateBMR(weight, height, birthDate, gender);
         const totalDailyCalories = calculateTotalDailyCalories(basalMetabolicRate, activityLevel);
+        const waterConsumingRate =  calculateWaterRate(weight);
         const newUser = new User({
             email,
             password,
-           
             birthDate,
             gender,
             height,
@@ -30,6 +30,7 @@ router.post('/register', async (req, res) => {
             eatType,
             userImg,
             basalMetabolicRate,
+            waterConsumingRate,
             totalDailyCalories,
         });
 
@@ -90,7 +91,7 @@ router.get('/user-id', (req, res) => {
     }
 });
 
-router.put('/profile', verifyToken, async (req, res) => {
+router.put('/edit-profile', verifyToken, async (req, res) => {
     const userId = req.userId;
 
     try {
@@ -169,5 +170,11 @@ function calculateTotalDailyCalories(bmr, activityLevel) {
     return totalDailyCalories.toFixed(2);
 }
 
+function calculateWaterRate(weight) {
 
+    let litre;
+    litre = weight*33;
+
+    return litre.toFixed(2);
+}
 module.exports = router;
