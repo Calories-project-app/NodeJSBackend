@@ -64,10 +64,12 @@ router.post('/login', async (req, res) => {
             user,
           })
     } catch (error) {
-        console.error(err)
+        console.error(error)
         res.status(400).json({ message: error.message });
     }
 });
+
+
 
 
 router.get('/user-id', (req, res) => {

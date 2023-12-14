@@ -4,36 +4,88 @@ const FoodHistory = require("../models/FoodHistory");
 const WaterHistory = require("../models/waterHistory");
 const User = require("../models/User");
 const verifyToken = require("../middleware/verifyToken");
-
-router.post("/saveFood", verifyToken, async (req, res) => {
-  try {
-    const { userId, foodName, calories, fat, protein, carbohydate, time } =
-      req.body;
-
-    const userExists = await User.findById(userId);
-    if (!userExists) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    const foodHistory = new FoodHistory({
-      userId,
-      foodName,
-      calories,
-      fat,
-      protein,
-      carbohydate,
-      time,
-    });
-
-    await foodHistory.save();
-
-    res.status(201).json({ message: "Food history saved successfully" });
-  } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Internal server error", error: error.message });
-  }
+const {
+  getStorage,
+  ref,
+  getDownloadURL,
+  uploadBytesResumable,
+} = require("firebase/storage");
+const multer = require("multer");
+const storage = getStorage();
+const storageConfig = multer.memoryStorage();
+const upload = multer({
+  storage: storageConfig,
+  limits: {
+    fileSize: 10 * 1024 * 1024, 
+  },
 });
+
+
+//save food
+router.post(
+  "/saveFood",
+  verifyToken,
+  upload.single("imgPath"),
+  async (req, res) => {
+    try {
+      const {
+        userId,
+        foodName,
+        calories,
+        fat,
+        protein,
+        carbohydate,
+        imgPath,
+        time,
+      } = req.body;
+
+      const userExists = await User.findById(userId);
+      if (!userExists) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const foodHistory = new FoodHistory({
+        userId,
+        foodName,
+        calories,
+        fat,
+        protein,
+        carbohydate,
+        imgPath,
+        time,
+      });
+
+      if (req.file) {
+        const fileBuffer = req.file.buffer;
+        const storageRef = ref(
+          storage,
+          `foodPictures/${userId}/${foodHistory._id}`
+        );
+        const metadata = {
+          contentType: req.file.mimetype,
+        };
+        const uploadTask = uploadBytesResumable(
+          storageRef,
+          fileBuffer,
+          metadata
+        );
+        const snapshot = await uploadTask;
+        foodHistory.imgPath = await getDownloadURL(snapshot.ref);
+      }
+
+      await foodHistory.save();
+
+      res.status(201).json({
+        foodHistory: foodHistory,
+        message: "Food history saved successfully",
+      });
+    } catch (error) {
+      res
+        .status(500)
+        .json({ message: "Internal server error", error: error.message });
+    }
+  }
+);
 
 router.get("/foodHistory/:userId", verifyToken, async (req, res) => {
   try {

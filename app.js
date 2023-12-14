@@ -7,6 +7,15 @@ var logger = require('morgan');
 const mongoose = require('mongoose');
 const expressSession = require('express-session');
 const flash = require('connect-flash');
+
+
+const { initializeApp } = require("firebase/app");
+
+const config = require("./config/config");
+
+
+initializeApp(config.firebaseConfig)
+
 const app = express();
 //route
 
@@ -14,6 +23,7 @@ const authRoutes = require('./routes/auth');
 const indexRouter = require('./routes/index');
 const usersRouter = require('./routes/users');
 const foodHistoryRouter = require('./routes/food-history');
+const waterTypeRouter = require('./routes/getWaterType');
 const waterHistoryRouter = require('./routes/water-history');
 mongoose.Promise = global.Promise;
 
@@ -36,8 +46,10 @@ app.use(flash());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
+app.use('/', waterTypeRouter); 
 app.use('/food-history', foodHistoryRouter);
 app.use('/water-history', waterHistoryRouter);
+app.use('/get', waterTypeRouter);
 app.use('/users', usersRouter);
 app.use('/auth', authRoutes);
 
