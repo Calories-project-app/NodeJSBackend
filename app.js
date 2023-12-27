@@ -24,6 +24,8 @@ const usersRouter = require("./routes/users");
 const foodHistoryRouter = require("./routes/food-history");
 const waterTypeRouter = require("./routes/getWaterType");
 const waterHistoryRouter = require("./routes/water-history");
+const medalRoutes = require('./routes/medal');
+
 mongoose.Promise = global.Promise;
 
 mongoose
@@ -47,6 +49,7 @@ app.use("/", indexRouter);
 app.use("/", waterTypeRouter);
 app.use("/food-history", foodHistoryRouter);
 app.use("/water-history", waterHistoryRouter);
+app.use('/medals', medalRoutes);
 app.use("/get", waterTypeRouter);
 app.use("/users", usersRouter);
 app.use("/auth", authRoutes);

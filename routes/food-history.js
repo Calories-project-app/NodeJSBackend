@@ -3,6 +3,8 @@ const router = express.Router();
 const FoodHistory = require("../models/FoodHistory");
 const WaterHistory = require("../models/waterHistory");
 const User = require("../models/User");
+const Medal = require("../models/Medal");
+const UserMedal = require("../models/UserMedal");
 const verifyToken = require("../middleware/verifyToken");
 const {
   getStorage,
@@ -16,10 +18,9 @@ const storageConfig = multer.memoryStorage();
 const upload = multer({
   storage: storageConfig,
   limits: {
-    fileSize: 10 * 1024 * 1024, 
+    fileSize: 10 * 1024 * 1024,
   },
 });
-
 
 //save food
 router.post(
@@ -75,10 +76,22 @@ router.post(
 
       await foodHistory.save();
 
-      res.status(201).json({
-        foodHistory: foodHistory,
-        message: "Food history saved successfully",
-      });
+      const streakMedal = await checkFoodConsumptionStreak(userId);
+      if (streakMedal) {
+        // Award the medal
+        const user = await User.findById(userId);
+        user.medals.push(streakMedal._id);
+        await UserMedal.save();
+        res.status(200).json({
+          foodHistory: foodHistory,
+          message: "Food history saved successfully, and medal awarded",
+        });
+      } else {
+        res.status(201).json({
+          foodHistory: foodHistory,
+          message: "Food history saved successfully",
+        });
+      }
     } catch (error) {
       res
         .status(500)
@@ -205,4 +218,62 @@ router.post("/foodHistory/latestFoods/", verifyToken, async (req, res) => {
       .json({ message: "Internal server error", error: error.message });
   }
 });
+
+async function checkFoodConsumptionStreak(userId) {
+  try {
+    const streakMedals = await Medal.find();
+
+    const currentDate = new Date();
+    console.log(
+      "🚀 ~ file: food-history.js:229 ~ checkFoodConsumptionStreak ~ streakMedals:",
+      streakMedals
+    );
+    for (const streakMedal of streakMedals) {
+      const streakMedalRequirement = streakMedal.requirement;
+      console.log(
+        "🚀 ~ file: food-history.js:230 ~ checkFoodConsumptionStreak ~ streakMedalRequirement:",
+        streakMedalRequirement
+      );
+
+      const streakStartDate = new Date(currentDate);
+      streakStartDate.setDate(
+        currentDate.getDate() - streakMedalRequirement + 1
+      );
+
+      const streakDays = await FoodHistory.find({
+        userId: userId,
+        date: { $gte: streakStartDate, $lte: currentDate },
+      }).distinct("date");
+
+      console.log(
+        "🚀 ~ file: food-history.js:243 ~ checkFoodConsumptionStreak ~ streakMedalRequirement:",
+        streakMedalRequirement
+      );
+      if (streakDays.length >= streakMedalRequirement) {
+        // User achieved the food consumption streak, award the medal
+        const userMedal = new UserMedal({
+          userId: userId,
+          medalId: streakMedal._id,
+          streak: streakDays.length,
+          modified_at: currentDate.toISOString(),
+          created_at: currentDate.toISOString(),
+        });
+
+        await userMedal.save();
+        console.log(
+          "🚀 ~ file: food-history.js:254 ~ checkFoodConsumptionStreak ~ userMedal:",
+          userMedal
+        );
+
+        return streakMedal;
+      }
+    }
+
+    return null; // No streak achieved
+  } catch (error) {
+    console.error("Error checking food consumption streak:", error.message);
+    return null;
+  }
+}
+
 module.exports = router;
