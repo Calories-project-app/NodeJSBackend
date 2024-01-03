@@ -9,15 +9,21 @@ const verifyToken = require('../middleware/verifyToken');
 
 router.post('/register', async (req, res) => {
     try {
-        const { email, password, birthDate, gender, height, weight, weightGoal, activityLevel, eatType,userImg } = req.body;
+        const { email, password, birthDate, gender, height, weight, weightGoal, activityLevel, eatType, userImg } = req.body;
 
         const existingUser = await User.findOne({ email });
         if (existingUser) {
             return res.status(409).json({ message: 'Email already exists' });
         }
+
         const basalMetabolicRate = calculateBMR(weight, height, birthDate, gender);
         const totalDailyCalories = calculateTotalDailyCalories(basalMetabolicRate, activityLevel);
-        const waterConsumingRate =  calculateWaterRate(weight);
+        const waterConsumingRate = calculateWaterRate(weight);
+
+        const fatConsumingRate = (totalDailyCalories * 0.3 / 9).toFixed(2); // 1g of fat = 9 calories
+        const proteinConsumingRate = (totalDailyCalories * 0.3 / 4).toFixed(2); // 1g of protein = 4 calories
+        const carbConsumingRate = (totalDailyCalories * 0.4 / 4).toFixed(2); // 1g of carbohydrates = 4 calories
+
         const newUser = new User({
             email,
             password,
@@ -32,6 +38,9 @@ router.post('/register', async (req, res) => {
             basalMetabolicRate,
             waterConsumingRate,
             totalDailyCalories,
+            fatConsumingRate,
+            proteinConsumingRate,
+            carbConsumingRate,
         });
 
         await newUser.save();
@@ -41,6 +50,7 @@ router.post('/register', async (req, res) => {
         res.status(400).json({ message: error.message });
     }
 });
+
 
 
 router.post('/login', async (req, res) => {

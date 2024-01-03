@@ -224,51 +224,45 @@ async function checkFoodConsumptionStreak(userId) {
     const streakMedals = await Medal.find();
 
     const currentDate = new Date();
-    console.log(
-      "🚀 ~ file: food-history.js:229 ~ checkFoodConsumptionStreak ~ streakMedals:",
-      streakMedals
-    );
-    for (const streakMedal of streakMedals) {
-      const streakMedalRequirement = streakMedal.requirement;
-      console.log(
-        "🚀 ~ file: food-history.js:230 ~ checkFoodConsumptionStreak ~ streakMedalRequirement:",
-        streakMedalRequirement
-      );
-
-      const streakStartDate = new Date(currentDate);
-      streakStartDate.setDate(
-        currentDate.getDate() - streakMedalRequirement + 1
-      );
-
-      const streakDays = await FoodHistory.find({
-        userId: userId,
-        date: { $gte: streakStartDate, $lte: currentDate },
-      }).distinct("date");
-
-      console.log(
-        "🚀 ~ file: food-history.js:243 ~ checkFoodConsumptionStreak ~ streakMedalRequirement:",
-        streakMedalRequirement
-      );
-      if (streakDays.length >= streakMedalRequirement) {
-        // User achieved the food consumption streak, award the medal
-        const userMedal = new UserMedal({
-          userId: userId,
-          medalId: streakMedal._id,
-          streak: streakDays.length,
-          modified_at: currentDate.toISOString(),
-          created_at: currentDate.toISOString(),
-        });
-
-        await userMedal.save();
-        console.log(
-          "🚀 ~ file: food-history.js:254 ~ checkFoodConsumptionStreak ~ userMedal:",
-          userMedal
+    let streakFoodMedal = streakMedals.filter(streakFoodMedal => streakFoodMedal.name_eng.includes("Calories"));
+    
+  
+    for (const streakMedal of streakFoodMedal) {
+   
+        const streakMedalRequirement = streakMedal.requirement;
+      
+  
+        const streakStartDate = new Date(currentDate);
+        streakStartDate.setDate(
+          currentDate.getDate() - streakMedalRequirement + 1
         );
-
-        return streakMedal;
-      }
+  
+        const streakDays = await FoodHistory.find({
+          userId: userId,
+          date: { $gte: streakStartDate, $lte: currentDate },
+        }).distinct("date");
+        console.log("🚀 ~ file: food-history.js:247 ~ checkFoodConsumptionStreak ~ streakDays:", streakDays)
+  
+        if (streakDays.length >= streakMedalRequirement) {
+         
+          const userMedal = new UserMedal({
+            userId: userId,
+            medalId: streakMedal._id,
+            streak: streakDays.length,
+            modified_at: currentDate.toISOString(),
+            created_at: currentDate.toISOString(),
+          });
+  
+          await userMedal.save();
+          console.log(
+            "🚀 ~ file: food-history.js:254 ~ checkFoodConsumptionStreak ~ userMedal:",
+            userMedal
+          );
+  
+          return streakMedal;
+        }
+      
     }
-
     return null; // No streak achieved
   } catch (error) {
     console.error("Error checking food consumption streak:", error.message);

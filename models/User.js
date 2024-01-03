@@ -16,6 +16,9 @@ const UserSchema = new Schema({
   basalMetabolicRate: { type: Number },
   waterConsumingRate: { type: Number },
   totalDailyCalories: { type: Number },
+  fatConsumingRate: { type: Number },
+  proteinConsumingRate: { type: Number },
+  carbConsumingRate: { type: Number },
   friends: [{ type: Schema.Types.ObjectId, ref: "User" }], 
 });
 
