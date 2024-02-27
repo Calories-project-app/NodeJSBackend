@@ -10,6 +10,7 @@ const flash = require("connect-flash");
 require("dotenv").config();
 const uri = process.env.MONGO_URI;
 const { initializeApp } = require("firebase/app");
+const { getAuth } = require("firebase/auth");
 
 const config = require("./config/config");
 
@@ -29,7 +30,7 @@ const medalRoutes = require('./routes/medal');
 mongoose.Promise = global.Promise;
 
 mongoose
-  .connect(uri)
+  .connect('mongodb+srv://admin:1234@cluster0.ohjbb2e.mongodb.net/?retryWrites=true&w=majority')
   .then(() => console.log("Connect successfully"))
   .catch((err) => console.error(err));
 

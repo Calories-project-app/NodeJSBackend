@@ -1,32 +1,49 @@
-
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
-const verifyToken = require('../middleware/verifyToken');
+const jwt = require("jsonwebtoken");
+const User = require("../models/User");
+const verifyToken = require("../middleware/verifyToken");
+const { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification } = require("firebase/auth");
 
 
-router.post('/register', async (req, res) => {
+const auth = getAuth();
+router.post("/register", async (req, res) => {
     try {
-        const { email, password, birthDate, gender, height, weight, weightGoal, activityLevel, eatType, userImg } = req.body;
+        const {
+            email,
+            name,
+            password,
+            birthDate,
+            gender,
+            height,
+            weight,
+            weightGoal,
+            activityLevel,
+            eatType,
+            userImg,
+        } = req.body;
 
         const existingUser = await User.findOne({ email });
         if (existingUser) {
-            return res.status(409).json({ message: 'Email already exists' });
+            return res.status(409).json({ message: "Email already exists" });
         }
 
         const basalMetabolicRate = calculateBMR(weight, height, birthDate, gender);
-        const totalDailyCalories = calculateTotalDailyCalories(basalMetabolicRate, activityLevel);
+        const totalDailyCalories = calculateTotalDailyCalories(
+            basalMetabolicRate,
+            activityLevel
+        );
         const waterConsumingRate = calculateWaterRate(weight);
 
-        const fatConsumingRate = (totalDailyCalories * 0.3 / 9).toFixed(2); // 1g of fat = 9 calories
-        const proteinConsumingRate = (totalDailyCalories * 0.3 / 4).toFixed(2); // 1g of protein = 4 calories
-        const carbConsumingRate = (totalDailyCalories * 0.4 / 4).toFixed(2); // 1g of carbohydrates = 4 calories
-
+        const fatConsumingRate = ((totalDailyCalories * 0.3) / 9).toFixed(2); // 1g of fat = 9 calories
+        const proteinConsumingRate = ((totalDailyCalories * 0.3) / 4).toFixed(2); // 1g of protein = 4 calories
+        const carbConsumingRate = ((totalDailyCalories * 0.4) / 4).toFixed(2); // 1g of carbohydrates = 4 calories
+        const userRecord = await createUserWithEmailAndPassword(auth, email, password)
+        sendEmailVerification(auth.currentUser)
         const newUser = new User({
+            _id: userRecord.uid,
             email,
-            password,
+            name,
             birthDate,
             gender,
             height,
@@ -42,73 +59,64 @@ router.post('/register', async (req, res) => {
             proteinConsumingRate,
             carbConsumingRate,
         });
-
         await newUser.save();
-
-        res.status(201).json({ message: 'Registration successful' });
+        res.status(201).json({ message: "Registration successful" });
     } catch (error) {
         res.status(400).json({ message: error.message });
     }
 });
 
 
-
-router.post('/login', async (req, res) => {
+router.post("/login", async (req, res) => {
     try {
         const { email, password } = req.body;
-        const user = await User.findOne({ email })
-      
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const firebaseUser = userCredential.user;
+        if (!firebaseUser) {
+            return res.status(401).json({ message: "Authentication failed with Firebase" });
+        }
+        const user = await User.findOne({ email });
         if (!user) {
-            return res.status(401).json({ message: 'Authentication failed' });
+            return res.status(404).json({ message: "User details not found in MongoDB" });
         }
-
-        const passwordMatch = await bcrypt.compare(password, user.password);
-        if (!passwordMatch) {
-            return res.status(401).json({ message: 'Password wrong' });
-        }
-
-        const token = jwt.sign({ userId: user._id }, 'your-secret-key', { expiresIn: '7d' });
+        const token = await firebaseUser.getIdToken();
 
         res.status(200).json({
             token,
-            user,
-          })
+            user: user.toObject(),
+        });
     } catch (error) {
-        console.error(error)
+        console.error(error);
         res.status(400).json({ message: error.message });
     }
 });
 
-
-
-
-router.get('/user-id', (req, res) => {
+router.get("/user-id", (req, res) => {
     try {
-    
         console.log(req.headers);
-        const authHeader = req.headers['authorization'];
+        const authHeader = req.headers["authorization"];
 
         console.log(authHeader);
         if (!authHeader) {
-            return res.status(401).json({ message: 'Authorization header is missing' });
+            return res
+                .status(401)
+                .json({ message: "Authorization header is missing" });
         }
 
-        const token = authHeader.split(' ')[1];
-        const decodedToken = jwt.verify(token, 'your-secret-key');
+        const token = authHeader.split(" ")[1];
         const userId = decodedToken.userId;
 
         res.status(200).json({ userId });
     } catch (error) {
-        res.status(401).json({ message: 'Authentication failed' });
+        res.status(401).json({ message: "Authentication failed" });
     }
 });
 
-router.put('/edit-profile', verifyToken, async (req, res) => {
+router.put("/edit-profile", verifyToken, async (req, res) => {
     const userId = req.userId;
 
     try {
         const updatedFields = {
-      
             birthDate: req.body.birthDate,
             gender: req.body.gender,
             height: req.body.height,
@@ -118,19 +126,24 @@ router.put('/edit-profile', verifyToken, async (req, res) => {
             eatType: req.body.eatType,
             userImg: req.body.userImg,
         };
-        const updatedProfile = await User.findByIdAndUpdate(userId, updatedFields, { new: true });
+        const updatedProfile = await User.findByIdAndUpdate(userId, updatedFields, {
+            new: true,
+        });
 
         if (!updatedProfile) {
-            return res.status(404).json({ message: 'User not found' });
+            return res.status(404).json({ message: "User not found" });
         }
 
-        return res.json({ message: 'User profile updated successfully', user: updatedProfile });
+        return res.json({
+            message: "User profile updated successfully",
+            user: updatedProfile,
+        });
     } catch (error) {
-        return res.status(500).json({ message: 'Internal server error', error: error.message });
+        return res
+            .status(500)
+            .json({ message: "Internal server error", error: error.message });
     }
 });
-
-
 
 function calculateBMR(weight, height, birthDate, gender) {
     //BMR สำหรับผู้ชาย = 66 + (13.7 X น้ำหนักตัวปัจจุบันเป็นกิโลกรัม) + (5 x ส่วนสูงปัจจุบันเป็นเซนติเมตร) – (6.8 x อายุปัจจุบัน)
@@ -139,12 +152,12 @@ function calculateBMR(weight, height, birthDate, gender) {
     const age = calculateAge(birthDate);
 
     let bmr;
-    if (gender.toLowerCase() === 'male') {
-        bmr = 66 + (13.7 * weight) + (5 * height) - (6.8 * age);
-    } else if (gender.toLowerCase() === 'female') {
-        bmr = 665 + (9.6 * weight) + (1.8 * height) - (4.7 * age);
+    if (gender.toLowerCase() === "male") {
+        bmr = 66 + 13.7 * weight + 5 * height - 6.8 * age;
+    } else if (gender.toLowerCase() === "female") {
+        bmr = 665 + 9.6 * weight + 1.8 * height - 4.7 * age;
     } else {
-        throw new Error('Invalid gender');
+        throw new Error("Invalid gender");
     }
 
     return bmr.toFixed(2);
@@ -155,7 +168,11 @@ function calculateAge(birthDate) {
     const birthDateObj = new Date(birthDate);
     const age = currentDate.getFullYear() - birthDateObj.getFullYear();
 
-    if (currentDate.getMonth() < birthDateObj.getMonth() || (currentDate.getMonth() === birthDateObj.getMonth() && currentDate.getDate() < birthDateObj.getDate())) {
+    if (
+        currentDate.getMonth() < birthDateObj.getMonth() ||
+        (currentDate.getMonth() === birthDateObj.getMonth() &&
+            currentDate.getDate() < birthDateObj.getDate())
+    ) {
         return age - 1;
     }
 
@@ -163,7 +180,6 @@ function calculateAge(birthDate) {
 }
 
 function calculateTotalDailyCalories(bmr, activityLevel) {
-
     const activityFactors = {
         sedentary: 1.2,
         lightlyActive: 1.375,
@@ -173,9 +189,8 @@ function calculateTotalDailyCalories(bmr, activityLevel) {
     };
 
     if (!activityFactors.hasOwnProperty(activityLevel)) {
-        throw new Error('Invalid activity level');
+        throw new Error("Invalid activity level");
     }
-
 
     const totalDailyCalories = bmr * activityFactors[activityLevel];
 
@@ -183,9 +198,8 @@ function calculateTotalDailyCalories(bmr, activityLevel) {
 }
 
 function calculateWaterRate(weight) {
-
     let litre;
-    litre = weight*33;
+    litre = weight * 33;
 
     return litre.toFixed(2);
 }
