@@ -7,7 +7,7 @@ router.get('/', function (req, res, next) {
 });
 
 //getAllMyFriendList
-router.get('/friends', async (req, res) => {
+router.get('/water-streak-friends', async (req, res) => {
   try {
     const userId = req.query.userId;
     const users = await User.findById(userId).select('friends')
@@ -19,7 +19,7 @@ router.get('/friends', async (req, res) => {
     let friendsDetails = [];
     for (let key in users.friends) {
       let friendId = users.friends[key];
-      const friendDetail = await User.findById(friendId).select('_id name foodStreak waterStreak userImg');
+      const friendDetail = await User.findById(friendId).select('_id name waterStreak userImg');
       if (friendDetail) { // Make sure the friend was found
         friendsDetails.push(friendDetail);
       }
@@ -31,6 +31,29 @@ router.get('/friends', async (req, res) => {
   }
 });
 
+router.get('/food-streak-friends', async (req, res) => {
+  try {
+    const userId = req.query.userId;
+    const users = await User.findById(userId).select('friends')
+
+    if (!users) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    let friendsDetails = [];
+    for (let key in users.friends) {
+      let friendId = users.friends[key];
+      const friendDetail = await User.findById(friendId).select('_id name foodStreak userImg');
+      if (friendDetail) { // Make sure the friend was found
+        friendsDetails.push(friendDetail);
+      }
+    }
+
+    res.status(200).json(friendsDetails);
+  } catch (error) {
+    res.status(500).json({ message: 'Internal Server Error', error: error.message });
+  }
+});
 
 router.get('/friends/:name', async (req, res) => {
   try {
