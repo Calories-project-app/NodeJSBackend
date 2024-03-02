@@ -19,7 +19,7 @@ router.get('/friends', async (req, res) => {
     let friendsDetails = [];
     for (let key in users.friends) {
       let friendId = users.friends[key];
-      const friendDetail = await User.findById(friendId).select('_id name');
+      const friendDetail = await User.findById(friendId).select('_id name foodStreak waterStreak userImg');
       if (friendDetail) { // Make sure the friend was found
         friendsDetails.push(friendDetail);
       }

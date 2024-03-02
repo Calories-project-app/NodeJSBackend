@@ -37,14 +37,14 @@ router.post(
         protein,
         carbohydate,
         imgPath,
-        time,
       } = req.body;
 
       const userExists = await User.findById(userId);
       if (!userExists) {
         return res.status(404).json({ message: "User not found" });
       }
-
+      const date = new Date().setHours(0, 0, 0, 0);
+      const endOfDay = new Date().setHours(23, 59, 59, 999);
       const foodHistory = new FoodHistory({
         userId,
         foodName,
@@ -53,7 +53,7 @@ router.post(
         protein,
         carbohydate,
         imgPath,
-        time,
+        time: new Date(),
       });
 
       if (req.file) {
@@ -76,22 +76,42 @@ router.post(
 
       await foodHistory.save();
 
-      const streakMedal = await checkFoodConsumptionStreak(userId);
-      if (streakMedal) {
-        // Award the medal
-        const user = await User.findById(userId);
-        user.medals.push(streakMedal._id);
-        await UserMedal.save();
-        res.status(200).json({
-          foodHistory: foodHistory,
-          message: "Food history saved successfully, and medal awarded",
-        });
-      } else {
-        res.status(201).json({
-          foodHistory: foodHistory,
-          message: "Food history saved successfully",
-        });
+      const totalCaloriesToday = await FoodHistory.aggregate([
+        {
+          $match: {
+            userId: userExists._id,
+            time: { $gte: new Date(date), $lt: new Date(date + 24 * 60 * 60 * 1000) }
+          }
+        },
+        { $group: { _id: null, totalCalories: { $sum: "$calories" } } }
+      ]);
+
+      const totalCalories = totalCaloriesToday.length > 0 ? totalCaloriesToday[0].totalCalories : 0;
+      const lastLogDate = userExists.lastFoodLogDate ? new Date(userExists.lastFoodLogDate.setHours(0, 0, 0, 0)) : null;
+      console.log(totalCalories)
+      if (date > lastLogDate && totalCalories >= userExists.totalDailyCalories) {
+        userExists.foodStreak += 1;
+        userExists.lastFoodLogDate = new Date();
+        await userExists.save();
       }
+
+      // const streakMedal = await checkFoodConsumptionStreak(userId);
+      // if (streakMedal) {
+      //   // Award the medal
+      //   const user = await User.findById(userId);
+      //   user.medals.push(streakMedal._id);
+      //   await UserMedal.save();
+      //   res.status(200).json({
+      //     foodHistory: foodHistory,
+      //     message: "Food history saved successfully, and medal awarded",
+      //   });
+      // } else {
+      //   res.status(201).json({
+      //     foodHistory: foodHistory,
+      //     message: "Food history saved successfully",
+      //   });
+      // }
+      res.status(201).json({ message: "Food saved successfully", foodHistory });
     } catch (error) {
       res
         .status(500)
@@ -225,43 +245,43 @@ async function checkFoodConsumptionStreak(userId) {
 
     const currentDate = new Date();
     let streakFoodMedal = streakMedals.filter(streakFoodMedal => streakFoodMedal.name_eng.includes("Calories"));
-    
-  
+
+
     for (const streakMedal of streakFoodMedal) {
-   
-        const streakMedalRequirement = streakMedal.requirement;
-      
-  
-        const streakStartDate = new Date(currentDate);
-        streakStartDate.setDate(
-          currentDate.getDate() - streakMedalRequirement + 1
-        );
-  
-        const streakDays = await FoodHistory.find({
+
+      const streakMedalRequirement = streakMedal.requirement;
+
+
+      const streakStartDate = new Date(currentDate);
+      streakStartDate.setDate(
+        currentDate.getDate() - streakMedalRequirement + 1
+      );
+
+      const streakDays = await FoodHistory.find({
+        userId: userId,
+        date: { $gte: streakStartDate, $lte: currentDate },
+      }).distinct("date");
+      console.log("🚀 ~ file: food-history.js:247 ~ checkFoodConsumptionStreak ~ streakDays:", streakDays)
+
+      if (streakDays.length >= streakMedalRequirement) {
+
+        const userMedal = new UserMedal({
           userId: userId,
-          date: { $gte: streakStartDate, $lte: currentDate },
-        }).distinct("date");
-        console.log("🚀 ~ file: food-history.js:247 ~ checkFoodConsumptionStreak ~ streakDays:", streakDays)
-  
-        if (streakDays.length >= streakMedalRequirement) {
-         
-          const userMedal = new UserMedal({
-            userId: userId,
-            medalId: streakMedal._id,
-            streak: streakDays.length,
-            modified_at: currentDate.toISOString(),
-            created_at: currentDate.toISOString(),
-          });
-  
-          await userMedal.save();
-          console.log(
-            "🚀 ~ file: food-history.js:254 ~ checkFoodConsumptionStreak ~ userMedal:",
-            userMedal
-          );
-  
-          return streakMedal;
-        }
-      
+          medalId: streakMedal._id,
+          streak: streakDays.length,
+          modified_at: currentDate.toISOString(),
+          created_at: currentDate.toISOString(),
+        });
+
+        await userMedal.save();
+        console.log(
+          "🚀 ~ file: food-history.js:254 ~ checkFoodConsumptionStreak ~ userMedal:",
+          userMedal
+        );
+
+        return streakMedal;
+      }
+
     }
     return null; // No streak achieved
   } catch (error) {

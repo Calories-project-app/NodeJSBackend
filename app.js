@@ -11,7 +11,6 @@ require("dotenv").config();
 const uri = process.env.MONGO_URI;
 const { initializeApp } = require("firebase/app");
 const { getAuth } = require("firebase/auth");
-
 const config = require("./config/config");
 
 initializeApp(config.firebaseConfig);

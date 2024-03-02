@@ -19,6 +19,20 @@ const UserSchema = new Schema({
   fatConsumingRate: { type: Number },
   proteinConsumingRate: { type: Number },
   carbConsumingRate: { type: Number },
+  foodStreak: {
+    type: Number,
+    default: 0, // starts with 0
+  },
+  waterStreak: {
+    type: Number,
+    default: 0, // starts with 0
+  },
+  lastFoodLogDate: {
+    type: Date,
+  },
+  lastWaterLogDate: {
+    type: Date,
+  },
   friends: [{ type: Schema.Types.ObjectId, ref: "User" }],
 });
 
