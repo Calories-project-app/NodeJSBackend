@@ -3,7 +3,7 @@ const router = express.Router();
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const verifyToken = require("../middleware/verifyToken");
-const { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification } = require("firebase/auth");
+const { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail } = require("firebase/auth");
 
 
 const auth = getAuth();
@@ -145,6 +145,28 @@ router.put("/edit-profile", verifyToken, async (req, res) => {
     }
 });
 
+router.put("/change-password", verifyToken, async (req, res) => {
+    const email = req.body.email;
+    try {
+        console.log(email)
+        await sendPasswordResetEmail(auth, email);
+        res.status(201).json({ message: 'Email sent successfully!' })
+    } catch (error) {
+        return res
+            .status(500)
+            .json({ message: "Internal server error", error: error.message });
+    }
+});
+router.put("/confirm-password", verifyToken, async (req, res) => {
+    const code = req.body;
+    try {
+        await confirmPasswordReset(email, code);
+    } catch (error) {
+        return res
+            .status(500)
+            .json({ message: "Internal server error", error: error.message });
+    }
+});
 function calculateBMR(weight, height, birthDate, gender) {
     //BMR สำหรับผู้ชาย = 66 + (13.7 X น้ำหนักตัวปัจจุบันเป็นกิโลกรัม) + (5 x ส่วนสูงปัจจุบันเป็นเซนติเมตร) – (6.8 x อายุปัจจุบัน)
 
