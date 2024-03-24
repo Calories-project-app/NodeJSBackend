@@ -29,7 +29,7 @@ const medalRoutes = require('./routes/medal');
 mongoose.Promise = global.Promise;
 
 mongoose
-  .connect('mongodb+srv://admin:1234@cluster0.ohjbb2e.mongodb.net/?retryWrites=true&w=majority')
+  .connect(uri)
   .then(() => console.log("Connect successfully"))
   .catch((err) => console.error(err));
 
