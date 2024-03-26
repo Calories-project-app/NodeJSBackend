@@ -5,7 +5,7 @@ services:
     build: .
     networks:
       - food-cal-model-and-service-api
-    image: arrin/foodcal-model:1.0.0
+    image: arrin/foodcal-model:lastest
     ports:
       - "8000:8000"
 
@@ -13,7 +13,7 @@ services:
     build: .
     networks:
       - food-cal-model-and-service-api
-    image: arrin/foodcalapi
+    image: arrin/foodcalapi:lastest
     ports:
       - 4000:3000
 
