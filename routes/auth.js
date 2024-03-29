@@ -112,8 +112,8 @@ router.get("/user-id", (req, res) => {
     }
 });
 
-router.put("/edit-profile", verifyToken, async (req, res) => {
-    const userId = req.userId;
+router.put("/edit-profile/:userId", verifyToken, async (req, res) => {
+    const userId = req.params.userId;
 
     try {
         const updatedFields = {
